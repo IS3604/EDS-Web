@@ -1,0 +1,38 @@
+name: Weekly blog post
+
+on:
+  schedule:
+    # Every Monday 04:30 UTC (10:00 IST)
+    - cron: "30 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Optional topic for this post"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  write-post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate post and rebuild site
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          BLOG_TOPIC: ${{ github.event.inputs.topic }}
+        run: python scripts/generate_post.py
+      - name: Commit and push
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "nothing to commit" && exit 0
+          git commit -m "Weekly blog post"
+          git push

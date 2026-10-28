@@ -1,0 +1,20 @@
+EDITSIMPLE FORMS -> RESEND EMAIL : SETUP
+
+1. RESEND
+   - Sign up at resend.com
+   - Domains > Add domain > editsimple.in > add the DNS records it shows at your domain provider > wait for "Verified"
+   - API Keys > Create API key > copy it (starts with re_)
+
+2. SUPABASE
+   - Create a free project at supabase.com, note the Project Ref (Settings > General)
+   - Install the Supabase CLI, then in the EditSimple-main folder run:
+       supabase login
+       supabase link --project-ref YOUR-PROJECT-REF
+       supabase secrets set RESEND_API_KEY=re_xxx TO_EMAIL=contact@editsimple.in FROM_EMAIL="EditSimple Website <leads@editsimple.in>" ALLOWED_ORIGINS=https://editsimple.in,https://is3604.github.io
+       supabase functions deploy send-lead --no-verify-jwt
+
+3. WEBSITE
+   - Open assets/config.js and replace YOUR-PROJECT-REF with your Supabase Project ID
+     (this is the only place it needs changing).
+   - Upload the site, submit a test form, check the inbox.
+   - Each email shows which page the form was filled on (Form Page: Generic Homepage / Course / Consulting / ...).
