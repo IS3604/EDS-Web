@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://is3604.github.io/EDS-Web/sitemap.xml
