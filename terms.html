@@ -14,8 +14,17 @@
 <link rel="stylesheet" href="assets/site.css"/>
 <script src="assets/config.js"></script>
 <script src="assets/site.js" defer></script>
+<script>
+  /* Mobile intro: show the logo splash once per visit (skipped for reduced motion). */
+  try {
+    if (window.matchMedia("(max-width: 1000px)").matches && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !sessionStorage.getItem("es_intro")) {
+      document.documentElement.className += " splash";
+    }
+  } catch (e) {}
+</script>
 </head>
 <body data-page="Terms &amp; Conditions">
+<div id="splash" aria-hidden="true"><img src="images/home/logo.png" alt=""/></div>
 <header>
   <div class="wrap nav">
     <a class="logo" href="index.html"><img src="images/home/logo.png" alt="EditSimple Brand Logo"/></a>

@@ -376,3 +376,65 @@
     if (!isNaN(t) && now - t < 7 * 864e5) el.hidden = false;
   });
 })();
+
+/* ---------- Mobile: animated section labels + logo intro ---------- */
+(function () {
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var mobile = window.matchMedia("(max-width: 760px)").matches;
+  var labels = document.querySelectorAll(".eyebrow, .faq > .wrap > h2");
+  if (mobile && !reduce && "IntersectionObserver" in window && labels.length) {
+    document.documentElement.classList.add("eb-anim");
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("eb-in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.6 });
+    labels.forEach(function (el) { io.observe(el); });
+  }
+
+  var root = document.documentElement, splash = document.getElementById("splash");
+  if (!splash) return;
+  if (!root.classList.contains("splash")) { splash.remove(); return; }
+  try { sessionStorage.setItem("es_intro", "1"); } catch (e) {}
+  var img = splash.querySelector("img"), target = document.querySelector("header .logo img");
+  var done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    root.classList.remove("splash");
+    splash.remove();
+  }
+  // 1) logo pops in and bounces (CSS, ~0.85s)  2) holds in the centre  3) jumps along a curve into the header
+  setTimeout(function () {
+    if (!target || !img || !img.animate) return finish();
+    var a = img.getBoundingClientRect(), b = target.getBoundingClientRect();
+    if (!b.width) return finish();
+    var dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+    var dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    var k = b.width / a.width;
+    var lift = Math.max(110, Math.abs(dy) * 0.45); // how high the arc goes above the straight path
+    var frames = [];
+    for (var n = 0; n <= 40; n++) {
+      var t = n / 40;
+      // quadratic Bezier bending slightly to the right: start (0,0) -> control (right, up) -> end (dx, dy)
+      var cx = Math.max(70, Math.abs(dx) * 0.45), cy = -lift;
+      var x = 2 * (1 - t) * t * cx + t * t * dx;
+      var y = 2 * (1 - t) * t * cy + t * t * dy;
+      var sc = 1 + (k - 1) * t;
+      var rot = Math.sin(t * Math.PI) * 7; // slight tilt to the right mid-air
+      frames.push({ transform: "translate(" + x + "px," + y + "px) rotate(" + rot + "deg) scale(" + sc + ")", offset: t });
+    }
+    img.style.animation = "none";
+    var jump = img.animate(frames, { duration: 950, easing: "cubic-bezier(.45,.05,.35,1)", fill: "forwards" });
+    // reveal the page underneath while the logo is in the air
+    setTimeout(function () { splash.classList.add("fly"); }, 350);
+    jump.onfinish = function () {
+      target.style.transition = "none";
+      root.classList.remove("splash"); // header logo shows exactly where the flying logo landed
+      splash.style.transition = "opacity .2s";
+      splash.style.opacity = "0";
+      setTimeout(finish, 220);
+    };
+  }, 1850);
+  setTimeout(finish, 5000); // safety net
+})();

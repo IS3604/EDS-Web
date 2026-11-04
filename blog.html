@@ -14,8 +14,17 @@
 <link rel="stylesheet" href="assets/site.css"/>
 <script src="assets/config.js"></script>
 <script src="assets/site.js" defer></script>
+<script>
+  /* Mobile intro: show the logo splash once per visit (skipped for reduced motion). */
+  try {
+    if (window.matchMedia("(max-width: 1000px)").matches && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !sessionStorage.getItem("es_intro")) {
+      document.documentElement.className += " splash";
+    }
+  } catch (e) {}
+</script>
 </head>
 <body data-page="Blog">
+<div id="splash" aria-hidden="true"><img src="images/home/logo.png" alt=""/></div>
 <header>
   <div class="wrap nav">
     <a class="logo" href="index.html"><img src="images/home/logo.png" alt="EditSimple Brand Logo"/></a>
@@ -56,7 +65,12 @@
 <section class="blog-list">
   <div class="wrap">
     <div class="blog-grid">
-      <p class="blog-empty">Our first article is on its way. Check back soon.</p>
+      <a class="blog-card" href="blog/effective-youtube-marketing-strategies-dermatology-practices.html">
+        <div class="blog-meta"><span class="blog-new" data-new-date="2026-11-02" hidden>New</span><time datetime="2026-11-02">November 2, 2026</time><span>&middot; 3 min read</span></div>
+        <h2>Effective YouTube Marketing Strategies for Dermatology Practices in 2026</h2>
+        <p>Discover top YouTube marketing strategies tailored for dermatology practices in 2026 to enhance patient engagement and practice growth.</p>
+        <span class="blog-more">Read article &rarr;</span>
+      </a>
     </div>
   </div>
 </section>
