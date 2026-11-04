@@ -15,6 +15,63 @@
     if (btn) btn.setAttribute("aria-expanded", on);
     return on;
   }
+  /* ---------- traffic source (UTM) tracking ----------
+     Saves where the visitor came from on their first page view (utm_* tags, ad click IDs,
+     or the referring site) and attaches it to every form they send. Kept for 90 days;
+     a newer link with UTM tags replaces it. */
+  var UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
+  var CLICK_KEYS = ["gclid", "fbclid", "msclkid", "ttclid", "li_fat_id"];
+  var SRC_KEY = "es_src", SRC_DAYS = 90;
+  function readSource() {
+    try {
+      var s = JSON.parse(localStorage.getItem(SRC_KEY) || "null");
+      if (s && Date.now() - s.t < SRC_DAYS * 864e5) return s;
+    } catch (e) {}
+    return null;
+  }
+  var SOURCE = (function () {
+    var q = new URLSearchParams(location.search), found = {}, tagged = false;
+    UTM_KEYS.concat(CLICK_KEYS).forEach(function (k) {
+      var v = (q.get(k) || "").trim().slice(0, 150);
+      if (v) { found[k] = v; tagged = true; }
+    });
+    var saved = readSource();
+    if (!tagged && saved) return saved;
+    var ref = "";
+    try { ref = document.referrer && new URL(document.referrer).hostname !== location.hostname ? document.referrer : ""; } catch (e) {}
+    if (!tagged && !ref && saved === null) found.utm_source = "(direct)";
+    if (!tagged && ref) {
+      var host = new URL(ref).hostname.replace(/^www\./, "");
+      var search = /(^|\.)(google|bing|yahoo|duckduckgo|yandex|ecosia|baidu)\./.test(host);
+      found.utm_source = host;
+      found.utm_medium = search ? "organic" : "referral";
+    }
+    if (found.gclid && !found.utm_source) { found.utm_source = "google"; found.utm_medium = "cpc"; }
+    if (found.fbclid && !found.utm_source) { found.utm_source = "facebook"; found.utm_medium = "paid_social"; }
+    var src = { v: found, ref: ref, land: location.pathname.split("/").pop() || "index.html", t: Date.now() };
+    try { localStorage.setItem(SRC_KEY, JSON.stringify(src)); } catch (e) {}
+    return src;
+  })();
+  function sourceFields(fields) {
+    var v = SOURCE.v, ids = CLICK_KEYS.filter(function (k) { return v[k]; });
+    if (v.utm_source) fields["UTM Source"] = v.utm_source;
+    if (v.utm_medium) fields["UTM Medium"] = v.utm_medium;
+    if (v.utm_campaign) fields["UTM Campaign"] = v.utm_campaign;
+    if (v.utm_term) fields["UTM Term"] = v.utm_term;
+    if (v.utm_content) fields["UTM Content"] = v.utm_content;
+    if (ids.length) fields["Ad Click ID"] = ids.map(function (k) { return k + "=" + v[k]; }).join(" ").slice(0, 300);
+    if (SOURCE.land) fields["Landing Page"] = SOURCE.land;
+    if (SOURCE.ref) fields["First Referrer"] = SOURCE.ref;
+  }
+  // Adds the visitor's UTM tags to a Calendly link so bookings show the source too.
+  function withUtm(url) {
+    try {
+      var u = new URL(url);
+      UTM_KEYS.forEach(function (k) { if (SOURCE.v[k] && !u.searchParams.get(k)) u.searchParams.set(k, SOURCE.v[k]); });
+      return u.toString();
+    } catch (e) { return url; }
+  }
+
   // Sends a form submission to the email function. Resolves true on success.
   function sendLead(form, subject, fields) {
     var payload = { form: form, subject: subject, website: fields._hp || "", fields: fields };
@@ -22,6 +79,7 @@
     fields["Form Page"] = PAGE;
     fields["Page URL"] = location.href;
     if (document.referrer) fields["Referrer"] = document.referrer;
+    sourceFields(fields);
     return fetch(window.ES_LEAD_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -260,7 +318,7 @@
       modal.classList.remove("open");
       document.body.classList.remove("lm-lock");
     }
-    $$('a[href*="calendly.com"]').forEach(function (a) { if (!a.closest("#leadModal")) a.addEventListener("click", openModal); });
+    $$('a[href*="calendly.com"]').forEach(function (a) { a.href = withUtm(a.href); if (!a.closest("#leadModal")) a.addEventListener("click", openModal); });
     // "Founding Offer" links: scroll to the offer section and open the free-video form.
     function claimFree(info) {
       var sec = $("#founding");
@@ -313,6 +371,7 @@
       leadBtn.textContent = "Submitting...";
       var name = first + " " + last, profession = isOther ? "Other: " + otherText : prof;
       var calUrl = CALENDLY + "?name=" + encodeURIComponent(name) + "&email=" + encodeURIComponent(email);
+      calUrl = withUtm(calUrl);
       var done = false, finish = function () {
         if (done) return;
         done = true;
