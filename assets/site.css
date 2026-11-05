@@ -5816,7 +5816,7 @@ html.splash #splash {
 html.splash #splash img {
   width: 150px;
   height: auto;
-  animation: sp-in .85s cubic-bezier(.2, 1.3, .4, 1) both;
+  animation: none;
 }
 html.splash header .logo img { opacity: 0; }
 html.splash #splash.fly { background-color: rgba(255, 255, 255, 0); }

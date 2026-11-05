@@ -494,6 +494,6 @@
       splash.style.opacity = "0";
       setTimeout(finish, 220);
     };
-  }, 1850);
+  }, 1000);
   setTimeout(finish, 5000); // safety net
 })();
